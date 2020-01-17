@@ -1,0 +1,91 @@
+oop project main psuedocode
+allergro protocols
+do{
+fonts displaying welcome message,register,login
+mouse interface
+while ( register||login=true )
+{
+bus generating loops which generates files of respective buses
+display cities
+mouse interface
+switch case
+display buses with timings
+mouse interface
+open bus seat page
+mouse interface
+if primitive coord=mouse coord
+reserve function
+logout function
+}
+}while(x!=0)
+int main()
+{
+	ALLEGRO_DISPLAY * display;
+	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+
+	al_init();
+	al_init_primitives_addon();
+
+	display = al_create_display(950, 640);
+	event_queue = al_create_event_queue();
+	if (!event_queue) {
+		fprintf(stderr, "failed to create event_queue!\n");
+		al_destroy_display(display);
+		return -1;
+	}
+	al_register_event_source(event_queue, al_get_display_event_source(display));
+	while (1)
+	{
+		ALLEGRO_EVENT ev;
+		ALLEGRO_TIMEOUT timeout;
+		al_init_timeout(&timeout, 0.06);
+		int y1 = 100, y2 = 130;
+		int x, z;
+		int x1 = 250, x2 = 280;
+		for (z = 0; z <= 1; z++)  // loop for drawing seat arrangement
+		{
+
+			for (x = 0; x <= 8; x++)
+			{
+				al_draw_filled_rectangle(x1, y1, x2, y2, al_map_rgb(0, 255, 0));
+				y1 = y1 + 50;
+				y2 = y2 + 50;
+			}
+			y1 = 100;
+			y2 = 130;
+			x1 = x1 + 80;
+			x2 = x2 + 80;
+		}
+		x1 = x1 + 100;
+		x2 = x2 + 100;
+		for (z = 0; z <= 1; z++)
+		{
+
+			for (x = 0; x <= 8; x++)
+			{
+				al_draw_filled_rectangle(x1, y1, x2, y2, al_map_rgb(0, 255, 0));
+				y1 = y1 + 50;
+				y2 = y2 + 50;
+			}
+			y1 = 100;
+			y2 = 130;
+			x1 = x1 + 80;
+			x2 = x2 + 80;
+		}
+
+		bool get_event = al_wait_for_event_until(event_queue, &ev, &timeout);
+		// add mouse event and mouse event defination will call reservation function which change bus file
+		if (get_event && ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+			break;
+		}
+
+		//al_clear_to_color(al_map_rgb(0, 0, 0));
+		al_flip_display();
+	}
+
+	al_destroy_display(display);
+	al_destroy_event_queue(event_queue);
+
+	return 0;
+}
+	

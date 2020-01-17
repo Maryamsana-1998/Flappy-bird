@@ -1,0 +1,4 @@
+﻿1>------ Build started: Project: ConsoleApplication30, Configuration: Debug Win32 ------
+1>  Source.c
+1>  ConsoleApplication30.vcxproj -> c:\users\maryam sana\documents\visual studio 2013\Projects\ConsoleApplication30\Debug\ConsoleApplication30.exe
+========== Build: 1 succeeded, 0 failed, 0 up-to-date, 0 skipped ==========

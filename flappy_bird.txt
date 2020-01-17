@@ -1,0 +1,318 @@
+#include <iostream>
+#include <allegro5/allegro.h>
+#include<allegro5/allegro_image.h>
+#include<allegro5/allegro_primitives.h>
+#include<time.h>
+#include<stdlib.h>
+#define background "bird.jpg"
+using namespace std;
+const float FPS = 60;
+const int SCREEN_W = 840;
+const int SCREEN_H = 480;
+const int BOUNCER_SIZE = 40;
+const float BOUNCER_YY = 5;
+enum MYKEYS {
+	KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT
+};
+ALLEGRO_BITMAP *load_bitmap_at_size(const char *filename, int w, int h)
+{
+	ALLEGRO_BITMAP *resized_bmp, *loaded_bmp, *prev_target;
+
+	// 1. create a temporary bitmap of size we want
+	resized_bmp = al_create_bitmap(w, h);
+	if (!resized_bmp) return NULL;
+
+	// 2. load the bitmap at the original size
+	loaded_bmp = al_load_bitmap(filename);
+	if (!loaded_bmp)
+	{
+		al_destroy_bitmap(resized_bmp);
+		return NULL;
+	}
+
+	// 3. set the target bitmap to the resized bmp
+	prev_target = al_get_target_bitmap();
+	al_set_target_bitmap(resized_bmp);
+
+	// 4. copy the loaded bitmap to the resized bmp
+	al_draw_scaled_bitmap(loaded_bmp,
+		0, 0,                                // source origin
+		al_get_bitmap_width(loaded_bmp),     // source width
+		al_get_bitmap_height(loaded_bmp),    // source height
+		0, 0,                                // target origin
+		w, h,                                // target dimensions
+		0                                    // flags
+		);
+	al_set_target_bitmap(prev_target);
+	// al_destroy_loaded_bmp(loaded_bmp);
+
+	return resized_bmp;
+}
+typedef struct
+{
+	float p1x;
+	float p1y;
+	float p1x2;
+	float p1y2;
+
+}pipeUP;
+typedef struct
+{
+
+	float p2x;
+	float p2y;
+	float p2x2;
+	float p2y2;
+}pipeDown;
+
+bool check_collision(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2) {
+	bool cond1 = x1 < x2 + w2;
+	bool cond2 = x1 + w1 > x2;
+	bool cond3 = y1 < y2 + h2;
+	bool cond4 = y1 + h1 > y2;
+
+	bool cond = cond1 && cond2 && cond3 && cond4;
+	return cond;
+}
+
+
+bool collision_true(pipeUP p, pipeDown p2, float x, float y)
+{
+	bool cond1, cond2;
+	cond1 = (x+BOUNCER_SIZE> p.p1x && x < p.p1x2 && y < p.p1y2);
+	cond2 = (x +BOUNCER_SIZE> p.p1x && x < p.p1x2 && p2.p2y);
+	return cond1 || cond2;
+}
+
+int main(int argc, char **argv)
+{
+	ALLEGRO_DISPLAY *display = NULL;
+	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+	ALLEGRO_TIMER *timer = NULL;
+	ALLEGRO_BITMAP *bouncer = NULL;
+	ALLEGRO_BITMAP *back = NULL;
+	ALLEGRO_BITMAP *back2 = NULL;
+	float bouncer_x = SCREEN_W / 2.0 - BOUNCER_SIZE / 2.0;
+	float bouncer_y = 440;
+	float bouncer_dy = 5;
+	float bouncer_d2y = 0.02;
+	float screen_x = 0;
+	float screen_x2 = SCREEN_W;
+	float screen_dx = 2;
+	bool key[4] = { false, false, false, false };
+	bool redraw = true;
+	bool doexit = false;
+
+	pipeUP tube[15];
+	pipeDown tube2[15];
+	int z;
+	srand(time(NULL));
+	float c = 800;
+	for (z = 0; z <= 10; z++)
+	{
+		
+		tube[z].p1x = c;
+		tube[z].p1y = 0;
+		tube[z].p1x2 = tube[z].p1x + 40;
+		tube[z].p1y2 = (rand() % 150) + 150;
+        tube2[z].p2x = c;
+		tube2[z].p2y = tube[z].p1y2 + 80;
+		tube2[z].p2x2 = tube2[z].p2x + 40;
+		tube2[z].p2y2 = SCREEN_H;
+		c = c +130;
+
+}
+	al_init_image_addon();
+	al_init_primitives_addon();
+
+	if (!al_init()) {
+		fprintf(stderr, "failed to initialize allegro!\n");
+		return -1;
+	}
+
+	if (!al_install_keyboard()) {
+		fprintf(stderr, "failed to initialize the keyboard!\n");
+		return -1;
+	}
+
+	timer = al_create_timer(1.0 / FPS);
+	if (!timer) {
+		fprintf(stderr, "failed to create timer!\n");
+		return -1;
+	}
+
+	display = al_create_display(SCREEN_W, SCREEN_H);
+	if (!display) {
+		fprintf(stderr, "failed to create display!\n");
+		al_destroy_timer(timer);
+		return -1;
+	}
+	back = load_bitmap_at_size(background, SCREEN_W, SCREEN_H);
+	back2 = load_bitmap_at_size(background, SCREEN_W, SCREEN_H);
+	bouncer = al_create_bitmap(BOUNCER_SIZE, BOUNCER_SIZE);
+
+	if (!bouncer) {
+		fprintf(stderr, "failed to create bouncer bitmap!\n");
+		al_destroy_display(display);
+		al_destroy_timer(timer);
+		return -1;
+	}
+
+	al_set_target_bitmap(bouncer);
+
+	al_clear_to_color(al_map_rgb(255, 0, 255));
+
+	al_set_target_bitmap(al_get_backbuffer(display));
+
+	event_queue = al_create_event_queue();
+	if (!event_queue) {
+		fprintf(stderr, "failed to create event_queue!\n");
+		al_destroy_bitmap(bouncer);
+		al_destroy_display(display);
+		al_destroy_timer(timer);
+		return -1;
+	}
+
+	al_register_event_source(event_queue, al_get_display_event_source(display));
+
+	al_register_event_source(event_queue, al_get_timer_event_source(timer));
+
+	al_register_event_source(event_queue, al_get_keyboard_event_source());
+
+	al_clear_to_color(al_map_rgb(0, 0, 0));
+
+	al_flip_display();
+
+	al_start_timer(timer);
+
+	while (!doexit)
+	{
+		ALLEGRO_EVENT ev;
+		al_wait_for_event(event_queue, &ev);
+
+		if (ev.type == ALLEGRO_EVENT_TIMER) {
+			if (key[KEY_UP] && bouncer_y >= 4.0) {
+				bouncer_y -= 10.0;
+				bouncer_dy = BOUNCER_YY;
+			}
+
+			if (key[KEY_DOWN] && bouncer_y <= SCREEN_H - BOUNCER_SIZE - 4.0) {
+				bouncer_y += 10.0;
+			}
+
+			if (key[KEY_LEFT] && bouncer_x >= 4.0) {
+
+			}
+
+			if (key[KEY_RIGHT] && bouncer_x <= SCREEN_W - BOUNCER_SIZE - 4.0) {
+
+			}
+			if (bouncer_y < 440)
+			{
+				bouncer_y = bouncer_y + bouncer_dy;
+			}
+			screen_x = screen_x - screen_dx;
+			screen_x2 = screen_x2 - screen_dx;
+
+			if (screen_x == -SCREEN_W)
+			{
+				screen_x = SCREEN_W;
+			}
+			if (screen_x2 == -SCREEN_W)
+			{
+				screen_x2 = SCREEN_W;
+			}
+			for (int l = 0; l <= 10; l++)
+			{
+				tube[l].p1x = tube[l].p1x - screen_dx;
+				tube[l].p1x2 = tube[l].p1x2 - screen_dx;
+				if (tube[l].p1x<-(SCREEN_W/2+160))
+				{
+					tube[l].p1x = SCREEN_W;
+					tube[l].p1x2 = tube[l].p1x + 40;
+				}
+		
+			}
+			for (int w = 0; w <= 10; w++)
+			{
+	
+				doexit = collision_true(tube[w], tube2[w], bouncer_x, bouncer_y);
+			}
+			bouncer_dy = bouncer_dy + bouncer_d2y;
+			redraw = true;
+		}
+		else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+			break;
+		}
+		else if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
+			switch (ev.keyboard.keycode) {
+			case ALLEGRO_KEY_UP:
+				key[KEY_UP] = true;
+				break;
+
+			case ALLEGRO_KEY_DOWN:
+				key[KEY_DOWN] = true;
+				break;
+
+			case ALLEGRO_KEY_LEFT:
+				key[KEY_LEFT] = true;
+				break;
+
+			case ALLEGRO_KEY_RIGHT:
+				key[KEY_RIGHT] = true;
+				break;
+			}
+		}
+		else if (ev.type == ALLEGRO_EVENT_KEY_UP) {
+			switch (ev.keyboard.keycode) {
+			case ALLEGRO_KEY_UP:
+				key[KEY_UP] = false;
+				break;
+
+			case ALLEGRO_KEY_DOWN:
+				key[KEY_DOWN] = false;
+				break;
+
+			case ALLEGRO_KEY_LEFT:
+				key[KEY_LEFT] = false;
+				break;
+
+			case ALLEGRO_KEY_RIGHT:
+				key[KEY_RIGHT] = false;
+				break;
+
+			case ALLEGRO_KEY_ESCAPE:
+				doexit = true;
+				break;
+			}
+		}
+
+		if (redraw && al_is_event_queue_empty(event_queue)) {
+			redraw = false;
+
+
+			al_clear_to_color(al_map_rgb(0, 0, 0));
+			al_draw_bitmap(back, screen_x, 0, 0);
+			al_draw_bitmap(back2, screen_x2, 0, 0);
+			al_draw_bitmap(bouncer, bouncer_x, bouncer_y, 0);
+			int g;
+		for (g = 0; g <=10; g++)
+			{
+				al_draw_filled_rectangle(tube[g].p1x, tube[g].p1y, tube[g].p1x2, tube[g].p1y2, al_map_rgb(255, 165, 0));
+				al_draw_filled_rectangle(tube[g].p1x, tube[g].p1y2+90, tube[g].p1x2,SCREEN_H, al_map_rgb(255, 165, 0));
+				/*cout << tube2[g].p2x << endl;
+				cout << tube2[g].p2y << endl;
+				cout << tube2[g].p2x2 << endl;
+				cout << tube2[g].p2y2 << endl;*/
+			}
+				al_flip_display();
+		}
+	}
+
+	al_destroy_bitmap(bouncer);
+	al_destroy_timer(timer);
+	al_destroy_display(display);
+	al_destroy_event_queue(event_queue);
+
+	return 0;
+}
